@@ -7,10 +7,13 @@ from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras import backend as K
 import numpy as np
 
-def load_data(train_audio_path, target_sr=8000, test_size=0.2, random_state=42):
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def load_data(train_audio_path, target_sr=8000):
     all_wave = []
     all_label = []
 
@@ -38,21 +41,30 @@ def load_data(train_audio_path, target_sr=8000, test_size=0.2, random_state=42):
 
     all_wave = np.array(all_wave).reshape(-1, target_sr, 1)
 
-    # set di addestramento e di validazione
+    # set di addestramento, di validazione e di test
     x_tr, x_val, y_tr, y_val = train_test_split(
         all_wave,
         y_categorical,
         stratify=y_categorical,
-        test_size=test_size,
-        random_state=random_state,
+        test_size=0.2,
+        random_state=42,
+        shuffle=True
+    )
+    
+    x_val, x_test, y_val, y_test = train_test_split(
+        x_val,
+        y_val,
+        stratify=y_val,
+        test_size=0.5,
+        random_state=42,
         shuffle=True
     )
 
-    return x_tr, x_val, y_tr, y_val, classes
+    return x_tr, x_val, x_test, y_tr, y_val, y_test, classes
 
-def build_sequential_model():
+def build_sequential_model(input_shape):
     model = Sequential([
-        Conv1D(filters=8, kernel_size=13, padding='valid', activation='relu', strides=1, input_shape=(8000, 1)),
+        Conv1D(8, kernel_size=13, padding='valid', activation='relu', input_shape=input_shape),
         MaxPooling1D(3),
         Dropout(0.3),
 
@@ -82,14 +94,22 @@ def build_sequential_model():
 
     return model
 
+def plot_confusion_matrix(y_true, y_pred, classes):
+    
+    cm = confusion_matrix(y_true.argmax(axis=1), y_pred.argmax(axis=1))
+    plt.figure(figsize=(len(classes), len(classes)))
+    sns.heatmap(cm, annot=True, fmt='g', xticklabels=classes, yticklabels=classes)
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.show()
+
 if __name__ == "__main__":
-    train_audio_path = "data\speech_commands_v0.01"
+    train_audio_path = "speech-recognition-cnn\data\speech_commands_v0.01"
 
-    x_tr, x_val, y_tr, y_val, labels = load_data(train_audio_path)
+    x_tr, x_val, x_test, y_tr, y_val, y_test, labels = load_data(train_audio_path)
+    input_shape = x_tr.shape[1:]
 
-    K.clear_session()
-
-    model = build_sequential_model()
+    model = build_sequential_model(input_shape)
 
     callbacks = [
         EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=10, min_delta=0.0001),
@@ -104,9 +124,13 @@ if __name__ == "__main__":
         initial_epoch=0
     )
 
+    # Test the model
+    y_pred = model.predict(x_test)
+    plot_confusion_matrix(y_test, y_pred, labels)
+
     pyplot.plot(history.history['loss'], label='train')
-    pyplot.plot(history.history['val_loss'], label='test')
+    pyplot.plot(history.history['val_loss'], label='validation')
     pyplot.legend()
     pyplot.show()
 
-    model.save("outputs/SpeechRecogModel.h5")
+    model.save("speech-recognition-cnn/outputs/SpeechRecogModel.h5")
