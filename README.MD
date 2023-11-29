@@ -5,6 +5,13 @@ This repository contains code for a speech recognition system implemented using 
 The project is organized as follows:
 
 1. data/: This directory contains the Speech Commands Dataset. Ensure that the dataset is downloaded and placed in this directory.
+        In order to download the dataset, run the following command:
+```bash
+kaggle competitions download -c tensorflow-speech-recognition-challenge
+
+unzip tensorflow-speech-recognition-challenge.zip -d data/
+```
+        Be also sure to remove any additional file from the data directory (e.g. the zip file, the csv file, readme and background noise folder)
 
 2. outputs/: This directory is used to store the trained model and other outputs generated during the process.
 

@@ -12,6 +12,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, classification_report
 
 def load_data(train_audio_path, target_sr=8000):
     all_wave = []
@@ -95,12 +96,14 @@ def build_sequential_model(input_shape):
     return model
 
 def plot_confusion_matrix(y_true, y_pred, classes):
-    
     cm = confusion_matrix(y_true.argmax(axis=1), y_pred.argmax(axis=1))
-    plt.figure(figsize=(len(classes), len(classes)))
-    sns.heatmap(cm, annot=True, fmt='g', xticklabels=classes, yticklabels=classes)
+    
+    plt.figure(figsize=(len(classes)+1, len(classes)))
+    sns.heatmap(cm, annot=True, fmt='g', xticklabels=classes, yticklabels=classes, cbar=False, cmap='Blues', annot_kws={"size": 12})
     plt.xlabel('Predicted')
-    plt.ylabel('True')
+    plt.xticks(rotation=90)
+    plt.yticks(rotation=0)
+    plt.ylabel('True', rotation=90)    
     plt.show()
 
 if __name__ == "__main__":
@@ -127,7 +130,7 @@ if __name__ == "__main__":
     # Test the model
     y_pred = model.predict(x_test)
     plot_confusion_matrix(y_test, y_pred, labels)
-
+    
     pyplot.plot(history.history['loss'], label='train')
     pyplot.plot(history.history['val_loss'], label='validation')
     pyplot.legend()
